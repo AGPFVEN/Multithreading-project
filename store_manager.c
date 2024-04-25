@@ -28,7 +28,7 @@ int main(int argc, const char *argv[])
   }
 
   // declare variables in order to read file
-  const int buffer_file_size = 1000;
+  const int buffer_file_size = 1;
   ssize_t buffer_file_result;
   char *buffer_file = (char *) malloc(buffer_file_size * sizeof(char));
 
@@ -39,11 +39,19 @@ int main(int argc, const char *argv[])
 
 
   // loop to read and store data
-  while((buffer_file_result = read(fd, buffer_file, buffer_file_size)) != 0){
-    for (int i = 0; i < buffer_file_size; i++){
-      
+  while((buffer_file_result = read(fd, buffer_file, buffer_file_size)) != 0)
+  {
+    // look for errors
+    if (buffer_file_result == -1){
+      printf("Error at reading file\n");
+      return -1;
     }
-    
+
+    if (number_operations == 0){
+      if(buffer_file != '\n'){
+        
+      }
+    }
   }
 
 
