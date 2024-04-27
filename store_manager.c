@@ -12,6 +12,8 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
+#define BUFFER_SIZE 6
+
 int main(int argc, const char *argv[])
 {
   // check number of arguments
@@ -28,14 +30,15 @@ int main(int argc, const char *argv[])
   }
 
   // declare variables in order to read file
-  const int buffer_file_size = 1;
   ssize_t buffer_file_result;
   char *buffer_file = (char *) malloc(buffer_file_size * sizeof(char));
 
   // declare variables to store data
   int number_operations = 0;
   const int max_number_length = 6;
-  char number_buffer[max_number_length] = "";
+  char number_buffer[BUFFER_SIZE] = "";
+  char bf[2];
+  bf[1] = '\0';
 
 
   // loop to read and store data
@@ -48,12 +51,14 @@ int main(int argc, const char *argv[])
     }
 
     if (number_operations == 0){
-      if(buffer_file != '\n'){
-        
+      if(*buffer_file != '\n'){
+        bf[0] = buffer_file;
+        strncat(number_buffer, buffer_file, 1);
       }
     }
   }
 
+  printf("%s\n", number_buffer);
 
 
   int profits = 0;
