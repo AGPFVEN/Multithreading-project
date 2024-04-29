@@ -18,7 +18,11 @@ struct product_info {
 
 typedef struct queue {
   // Define the struct yourself
-  int param1;
+  int front;
+  int rear;
+  int length;
+  //int *ir;
+  struct element *elements;
 }queue;
 
 queue* queue_init (int size);

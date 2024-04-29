@@ -18,6 +18,7 @@
 
 int main(int argc, const char *argv[])
 {
+
   // check number of arguments
   if (argc < 5){
     printf("Too few arguments\n");
