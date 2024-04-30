@@ -12,21 +12,37 @@
 
 #define BUFFER_SIZE 6
 
-
 int main(int argc, const char *argv[])
 {
       queue *myq;
 
-      myq = queue_init(4);
+      int size = 10;
+      int res; 
+      myq = queue_init(size);
+      size++;
       
-      struct element o;
-      o.op = 11;
-      o.product_id = 12;
-      o.units = 13;
-      printf("%i\n", myq->rear);
-      int res = queue_put(myq, &o);
-      printf("%i\n", myq->rear);
-      printf("%i\n", res);
-      //printf("%i %i\n", myq->length, (myq->ir)[1]);
+      struct element local_elements[size];
+      for (int i = 0; i < size; i++){
+            //printf("i: %i\n", i);
+            local_elements[i].op = (i + 2) * 10;
+            local_elements[i].product_id = i * 20;
+            local_elements[i].units = i * 30;
+            res = queue_put(myq, &local_elements[i]);
+            //queue_put(myq, &local_elements[i]);
+            local_elements[i].op = i * 0;
+      }
+
+      struct element *loc;
+      for (int i = 0; i < size; i++){
+            printf("i: %i\n", i);
+            printf("rear: %i, front %i\n", myq->rear, myq->front);
+            loc = queue_get(myq);
+            if (loc != NULL){
+                  printf("op %i\n", (myq->elements)[i].op);
+            }
+            free(loc);
+      }
+
+      queue_destroy(myq);
 }
 //gcc -o kk t.c

@@ -1,5 +1,6 @@
 CC=gcc
-FLAGS=-g -Wall -Werror
+#FLAGS=-g -Wall -Werror
+FLAGS=-g -Wall
 OBJ= kk
 LIBS= -pthread
 

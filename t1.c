@@ -11,6 +11,13 @@
 #include <sys/wait.h>
 
 int main(int argc, char *argv){
-      int i = (8 == 8);
-      printf("%i\n", i);
+      int *c;
+
+      c = (int *) malloc(10 * sizeof(int));
+
+      for (int i=0;i<10;i++){
+            c[i]=0;
+      }
+
+      free(c);
 }
