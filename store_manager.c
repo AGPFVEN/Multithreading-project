@@ -44,8 +44,9 @@ int main(int argc, const char *argv[])
   char *endptr;
 
   // loop to read and store data
-  while(((buffer_file_result = read(fd, buffer_file, buffer_file_size)) != 0) && (number_operations == 0))
+  while((number_operations == 0) && ((buffer_file_result = read(fd, buffer_file, buffer_file_size)) != 0))
   {
+
     // look for errors
     if (buffer_file_result == -1){
       printf("Error at reading file\n");
@@ -64,13 +65,16 @@ int main(int argc, const char *argv[])
     }    
   }
 
+  //fix this imperfection
+  (buffer_file_result = read(fd, buffer_file, buffer_file_size));
   struct element all_elements[number_operations];
   int read_counter = 0, current_element = 0; 
 
-  while((buffer_file_result = read(fd, buffer_file, buffer_file_size)) != 0){
+  do{
     /*El diseño del loop lo estoy haciendo así por flexibilidad,
     si en algún momento se quieren añadir más operaciones se puede hacer más fácil que
     con el aproach de según la primera letra sacar la operación y hacer lseek*/
+
     // get elements
     if((*buffer_file != ' ') && (*buffer_file != '\n')){
       strcat(number_buffer, buffer_file);
@@ -100,25 +104,24 @@ int main(int argc, const char *argv[])
         all_elements[current_element].units = strtol(number_buffer, &endptr, 10);
         if (errno != 0){
           perror("Error getting number of operations:");
-        } 
+        }
       }
 
       // new lines and spaces handling
       if (*buffer_file == '\n')
       {
-        current_element++;
         printf("n: %i, id: %i, op: %i, units: %i\n", current_element, all_elements[current_element].product_id, all_elements[current_element].op, all_elements[current_element].units);
+        current_element++;
+        read_counter = 0;
       }
-      else 
+      else{
         read_counter++;
+      }
 
       //reset word
-      strcpy(number_buffer, ""); 
+      strcpy(number_buffer, "");
     }
-  }
-
-  printf("%i\n", number_operations);
-
+  } while(((buffer_file_result = read(fd, buffer_file, buffer_file_size)) != 0) && (current_element < number_operations));
 
   int profits = 0;
   int product_stock[5] = {0};
