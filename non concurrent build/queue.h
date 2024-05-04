@@ -1,8 +1,6 @@
 //SSOO-P3 23/24
-
 #ifndef HEADER_FILE
 #define HEADER_FILE
-
 
 struct element {
   int product_id; //Product identifier
@@ -10,18 +8,11 @@ struct element {
   int units;      //Product units
 };
 
-struct product_info {
-  int product_id;
-  int purcharse_cost;
-  int sales_price;
-};
-
 typedef struct queue {
   // Define the struct yourself
   int front;
   int rear;
   int length;
-  //int *ir;
   struct element *elements;
 }queue;
 

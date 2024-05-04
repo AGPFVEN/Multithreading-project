@@ -5,8 +5,6 @@
 #include <string.h>
 #include "queue.h"
 
-struct product_info products[5];
-
 //To create a queue
 queue* queue_init(int size)
 {
