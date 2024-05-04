@@ -14,35 +14,46 @@
 
 int main(int argc, const char *argv[])
 {
-      queue *myq;
 
-      int size = 10;
-      int res; 
-      myq = queue_init(size);
-      size++;
+      struct element all_elements[3];
+      struct element *a;
+      printf("%p\n", all_elements);
+      printf("%p\n", a);
+
+      a = all_elements; 
+      printf("change\n");
+      printf("%p\n", all_elements);
+      printf("%p\n", a);
+
+      //queue *myq;
+
+      //int size = 10;
+      //int res; 
+      //myq = queue_init(size);
+      //size++;
       
-      struct element local_elements[size];
-      for (int i = 0; i < size; i++){
+      //struct element local_elements[size];
+      //for (int i = 0; i < size; i++){
+            ////printf("i: %i\n", i);
+            //local_elements[i].op = (i + 2) * 10;
+            //local_elements[i].product_id = i * 20;
+            //local_elements[i].units = i * 30;
+            //res = queue_put(myq, &local_elements[i]);
+            ////queue_put(myq, &local_elements[i]);
+            //local_elements[i].op = i * 0;
+      //}
+
+      //struct element *loc;
+      //for (int i = 0; i < size; i++){
             //printf("i: %i\n", i);
-            local_elements[i].op = (i + 2) * 10;
-            local_elements[i].product_id = i * 20;
-            local_elements[i].units = i * 30;
-            res = queue_put(myq, &local_elements[i]);
-            //queue_put(myq, &local_elements[i]);
-            local_elements[i].op = i * 0;
-      }
+            //printf("rear: %i, front %i\n", myq->rear, myq->front);
+            //loc = queue_get(myq);
+            //if (loc != NULL){
+                  //printf("op %i\n", (myq->elements)[i].op);
+            //}
+            //free(loc);
+      //}
 
-      struct element *loc;
-      for (int i = 0; i < size; i++){
-            printf("i: %i\n", i);
-            printf("rear: %i, front %i\n", myq->rear, myq->front);
-            loc = queue_get(myq);
-            if (loc != NULL){
-                  printf("op %i\n", (myq->elements)[i].op);
-            }
-            free(loc);
-      }
-
-      queue_destroy(myq);
+      //queue_destroy(myq);
 }
 //gcc -o kk t.c

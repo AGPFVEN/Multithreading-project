@@ -21,6 +21,75 @@
 int product_cost[5];
 int product_price[5];
 
+pthread_mutex_t access_mutex;
+pthread_cond_t non_full;
+pthread_cond_t non_empty;
+
+
+/*Lo hice así para que cada thread acceda a memoria haciendo que sea más eficiente
+en vez de que el main se encargara de elements[i] y pasarle el element directamente al producer*/
+void *t_producer(void *v_args){
+  // enqueue element
+  struct th_args args = *(struct th_args*) v_args;
+  //printf("thread: %i\n", args.th_elements_array[args.ith_from_file_array].units);
+
+  for(int i = args.ith_from_file_array; i < args.ith_from_file_array + args.operations_per_th; i++)
+  {
+    pthread_mutex_lock(&access_mutex);
+    while (queue_full(args.th_queue)){
+      pthread_cond_wait(&non_full, &access_mutex);
+    }
+    int result = queue_put(args.th_queue, &(args.th_elements_array[i]));
+    //printf("p %i of %i id: %i\n", i, args.ith_from_file_array + args.operations_per_th, args.ith_from_file_array);
+    //printf("%i\n", queue_full(args.th_queue));
+    if (result != 0){
+      printf("Error putting in queue the element number n%i\n", args.ith_from_file_array);
+    }
+    pthread_cond_signal(&non_empty);
+    pthread_mutex_unlock(&access_mutex);
+  }
+
+  return NULL;
+}
+
+void *t_consumer(void *v_args){
+  struct th_args args = *(struct th_args*) v_args;
+
+  for(int i = args.ith_from_file_array; i < args.ith_from_file_array + args.operations_per_th; i++)
+  {
+    pthread_mutex_lock(&access_mutex);
+    while (queue_empty(args.th_queue)){
+      pthread_cond_wait(&non_empty, &access_mutex);
+    }
+    struct element *consumer_element = queue_get(args.th_queue);
+    //printf("c %i of %i id: %i\n", i, args.ith_from_file_array + args.operations_per_th, args.ith_from_file_array);
+    //printf("%i\n", queue_empty(args.th_queue));
+    // calculate results
+    switch (consumer_element->op)
+    {
+    case 0:
+      *(args.profit) -= consumer_element->units * product_cost[(consumer_element->product_id) - 1]; 
+      (args.stock)[consumer_element->product_id - 1] += consumer_element->units;
+      break;
+  
+    case 1:
+      *(args.profit) += consumer_element->units * product_price[(consumer_element->product_id) - 1]; 
+      (args.stock)[consumer_element->product_id - 1] -= consumer_element->units;
+      break;
+  
+    default:
+      break;
+    }
+    //if (consumer_element == NULL){
+      //printf("Error putting in queue the element number n%i\n", args.ith_from_file_array);
+    //}
+    pthread_cond_signal(&non_full);
+    pthread_mutex_unlock(&access_mutex);
+  }
+
+  return NULL;
+}
+
 int producer(int i, struct element elements[], queue *producer_queue){
   // enqueue element
   int result = queue_put(producer_queue, &elements[i]);
@@ -59,8 +128,8 @@ int main(int argc, const char *argv[])
 {
 
   // check number of arguments
-  if (argc < 5){
-    printf("Too few arguments\n");
+  if (argc != 5){
+    printf("Incorrect number of arguments arguments\n");
     return -1;
   }
 
@@ -177,33 +246,92 @@ int main(int argc, const char *argv[])
   product_price[4] = 125;
 
   // measure time for fun
-  clock_t t = clock();
+  //clock_t t = clock();
 
+  //not final -------------------------------------
+  int thread_num_p = 1;
+  //int buffer_queue = 10;
+  int thread_num_c = 1; 
+
+  //declare useful vars
+  pthread_t producers[atoi(argv[2])];
+  pthread_t consumers[atoi(argv[3])];
   queue *store_queue;
-  store_queue = queue_init(number_operations);
-  int res;
-  for (int i=0; i<number_operations; i++){
-    res = producer(i, all_elements, store_queue);
-    if (res != 0){
-      printf("Error putting in queue the element number n%i\n", i);
+  //store_queue = queue_init(buffer_queue);
+  store_queue = queue_init(atoi(argv[4]));
+  //int res;
+
+  pthread_mutex_init(&access_mutex, NULL);
+  pthread_cond_init(&non_full, NULL);
+  pthread_cond_init(&non_empty, NULL);
+
+  //crating producers
+  for (int i=0; i<thread_num_p; i++)
+  {
+    struct th_args *p_args = malloc(sizeof(struct th_args)); 
+    p_args->operations_per_th = number_operations / thread_num_p;
+    p_args->ith_from_file_array = i * p_args->operations_per_th;
+
+    //check if op is divisible with thread num
+    if((i == thread_num_p - 1) && (number_operations % thread_num_p != 0)){
+      p_args->operations_per_th += number_operations % thread_num_p;
     }
+    
+    p_args->th_queue = store_queue;
+
+    p_args->th_elements_array = all_elements;
+
+    pthread_create(&(producers[i]), NULL, &t_producer, p_args);
+    //res = producer(i, all_elements, store_queue);
+    //if (res != 0){
+      //printf("Error putting in queue the element number n%i\n", i);
+    //}
   }
+
+  //-------------------
+  //for (int i=0; i<thread_num_p;i++){
+    //pthread_join(producers[i], NULL);
+  //}
 
   int profits = 0;
   int product_stock[5] = {0};
 
-  for (int i=0; i<number_operations; i++){
-    res = consumer(&profits, product_stock, store_queue);
-    if (res != 0){
-      printf("Error putting in queue the element number n%i\n", i);
+  for (int i=0; i<thread_num_c; i++){
+    struct th_args *c_args = malloc(sizeof(struct th_args)); 
+    c_args->operations_per_th = number_operations / thread_num_c;
+    c_args->ith_from_file_array = i * c_args->operations_per_th;
+
+    //check if op is divisible with thread num
+    if((i == thread_num_c - 1) && (number_operations % thread_num_c != 0)){
+      c_args->operations_per_th += number_operations % thread_num_c;
     }
+    
+    c_args->th_queue = store_queue;
+
+    c_args->th_elements_array = all_elements;
+
+    //pthread_create(&(producers[i]), NULL, &t_producer, c_args);
+
+    c_args->profit = &profits;
+    c_args->stock = product_stock;
+
+    pthread_create(&(consumers[i]), NULL, &t_consumer, c_args);
+    //res = consumer(&profits, product_stock, store_queue);
+    //if (res != 0){
+      //printf("Error putting in queue the element number n%i\n", i);
+    //}
   }
 
-  t = clock() -t;
-  double time_taken = ((double) t)/CLOCKS_PER_SEC;
-  printf("time taken %f\n", time_taken);
+  for (int i=0; i<thread_num_c;i++){
+    pthread_join(producers[i], NULL);
+    pthread_join(consumers[i], NULL);
+  }
 
-  // Output
+  //t = clock() -t;
+  //double time_taken = ((double) t)/CLOCKS_PER_SEC;
+  //printf("time taken %f\n", time_taken);
+
+  //// Output
   printf("Total: %d euros\n", profits);
   printf("Stock:\n");
   printf("  Product 1: %d\n", product_stock[0]);

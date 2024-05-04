@@ -1,0 +1,6 @@
+File:  200-200.test
+Nprod:  5
+MCons:  5
+Buffsize:  20
+t1.txt
+

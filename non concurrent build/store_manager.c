@@ -42,11 +42,13 @@ int consumer(int *consumer_profit, int consumer_stock[], queue *consumer_queue){
   case 0:
     *consumer_profit -= consumer_element->units * product_cost[(consumer_element->product_id) - 1]; 
     consumer_stock[consumer_element->product_id - 1] += consumer_element->units;
+    printf("%i PURCHASE %i\n", consumer_element->product_id, consumer_element->units);
     break;
   
   case 1:
     *consumer_profit += consumer_element->units * product_price[(consumer_element->product_id) - 1]; 
     consumer_stock[consumer_element->product_id - 1] -= consumer_element->units;
+    printf("%i PURCHASE %i\n", consumer_element->product_id, consumer_element->units);
     break;
   
   default:
