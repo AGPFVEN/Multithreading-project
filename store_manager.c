@@ -31,6 +31,7 @@ en vez de que el main se encargara de elements[i] y pasarle el element directame
 void *t_producer(void *v_args){
   // enqueue element
   struct th_args args = *(struct th_args*) v_args;
+  printf("ith from file: %i, op/th: %i, PRODUCER\n", args.ith_from_file_array, args.operations_per_th);
   //printf("thread: %i\n", args.th_elements_array[args.ith_from_file_array].units);
 
   for(int i = args.ith_from_file_array; i < args.ith_from_file_array + args.operations_per_th; i++)
@@ -40,7 +41,7 @@ void *t_producer(void *v_args){
       pthread_cond_wait(&non_full, &access_mutex);
     }
     int result = queue_put(args.th_queue, &(args.th_elements_array[i]));
-    //printf("p %i of %i id: %i\n", i, args.ith_from_file_array + args.operations_per_th, args.ith_from_file_array);
+    printf("%i p %i\n", args.th_elements_array[i].product_id, args.th_elements_array[i].units);
     //printf("%i\n", queue_full(args.th_queue));
     if (result != 0){
       printf("Error putting in queue the element number n%i\n", args.ith_from_file_array);
@@ -54,6 +55,7 @@ void *t_producer(void *v_args){
 
 void *t_consumer(void *v_args){
   struct th_args args = *(struct th_args*) v_args;
+  printf("ith from file: %i, op/th: %i, CONSUMER\n", args.ith_from_file_array, args.operations_per_th);
 
   for(int i = 0; i < args.operations_per_th; i++)
   //while(!queue_empty(args.th_queue))
@@ -63,6 +65,7 @@ void *t_consumer(void *v_args){
       pthread_cond_wait(&non_empty, &access_mutex);
     }
     struct element *consumer_element = queue_get(args.th_queue);
+    printf("%i c %i\n", args.th_elements_array[i].product_id, args.th_elements_array[i].units);
     //printf("c %i of %i id: %i\n", i, args.ith_from_file_array + args.operations_per_th, args.ith_from_file_array);
     //printf("%i\n", queue_empty(args.th_queue));
 

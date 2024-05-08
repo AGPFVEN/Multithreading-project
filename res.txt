@@ -4,3 +4,10 @@ MCons:  5
 Buffsize:  20
 t1.txt
 
+Total: -2100 euros
+Stock:
+  Product 1: 85
+  Product 2: 55
+  Product 3: 28
+  Product 4: 14
+  Product 5: 10
