@@ -29,23 +29,26 @@ pthread_cond_t non_empty;
 /*Lo hice así para que cada thread acceda a memoria haciendo que sea más eficiente
 en vez de que el main se encargara de elements[i] y pasarle el element directamente al producer*/
 void *t_producer(void *v_args){
-  // enqueue element
+  // retrieve arguments
   struct th_args args = *(struct th_args*) v_args;
-  printf("ith from file: %i, op/th: %i, PRODUCER\n", args.ith_from_file_array, args.operations_per_th);
-  //printf("thread: %i\n", args.th_elements_array[args.ith_from_file_array].units);
+  //printf("ith from file: %i, op/th: %i, PRODUCER\n", args.ith_from_file_array, args.operations_per_th);
 
   for(int i = args.ith_from_file_array; i < args.ith_from_file_array + args.operations_per_th; i++)
   {
+    // start synchronization
     pthread_mutex_lock(&access_mutex);
     while (queue_full(args.th_queue)){
       pthread_cond_wait(&non_full, &access_mutex);
     }
+
+    // execute operation
     int result = queue_put(args.th_queue, &(args.th_elements_array[i]));
-    printf("%i p %i\n", args.th_elements_array[i].product_id, args.th_elements_array[i].units);
-    //printf("%i\n", queue_full(args.th_queue));
+    //printf("%i p %i \t-> %i/%i\n", args.th_elements_array[i].product_id, args.th_elements_array[i].units, i, args.ith_from_file_array + args.operations_per_th -1);
     if (result != 0){
       printf("Error putting in queue the element number n%i\n", args.ith_from_file_array);
     }
+
+    // end synchronization
     pthread_cond_signal(&non_empty);
     pthread_mutex_unlock(&access_mutex);
   }
@@ -54,20 +57,21 @@ void *t_producer(void *v_args){
 }
 
 void *t_consumer(void *v_args){
+  // retrieve arguments
   struct th_args args = *(struct th_args*) v_args;
-  printf("ith from file: %i, op/th: %i, CONSUMER\n", args.ith_from_file_array, args.operations_per_th);
+  //printf("ith from file: %i, op/th: %i, CONSUMER\n", args.ith_from_file_array, args.operations_per_th);
 
   for(int i = 0; i < args.operations_per_th; i++)
-  //while(!queue_empty(args.th_queue))
   {
+    // start synchronization
     pthread_mutex_lock(&access_mutex);
     while (queue_empty(args.th_queue)){
       pthread_cond_wait(&non_empty, &access_mutex);
     }
-    struct element *consumer_element = queue_get(args.th_queue);
-    printf("%i c %i\n", args.th_elements_array[i].product_id, args.th_elements_array[i].units);
-    //printf("c %i of %i id: %i\n", i, args.ith_from_file_array + args.operations_per_th, args.ith_from_file_array);
-    //printf("%i\n", queue_empty(args.th_queue));
+
+    // execute operation
+    struct element *consumer_element = queue_get(args.th_queue); // dequeue
+    //printf("%i c %i \t-> %i/%i\n", args.th_elements_array[i].product_id, args.th_elements_array[i].units, i, args.operations_per_th -1);
 
     // calculate results
     switch (consumer_element->op)
@@ -85,9 +89,13 @@ void *t_consumer(void *v_args){
     default:
       break;
     }
+
+    // end synchronization
     pthread_cond_signal(&non_full);
     pthread_mutex_unlock(&access_mutex);
   }
+  
+  //printf("ith from file: %i, op/th: %i, CONSUMER\n", args.ith_from_file_array, args.operations_per_th);
 
   return NULL;
 }
@@ -148,13 +156,6 @@ int main(int argc, const char *argv[])
   int read_counter = 0, current_element = 0; 
 
   do{
-    /*El diseño del loop lo estoy haciendo así por flexibilidad,
-    si en algún momento se quieren añadir más operaciones se puede hacer más fácil que
-    con el aproach de según la primera letra sacar la operación y hacer lseek*/
-    
-    /*Decidí guardar las operaciones en ints en vez de en strings para ahorrar memoría sin
-    comprometer la flexibilidad*/
-
     // get elements
     if((*buffer_file != ' ') && (*buffer_file != '\n')){
       strcat(number_buffer, buffer_file);
@@ -190,7 +191,6 @@ int main(int argc, const char *argv[])
       // new lines and spaces handling
       if (*buffer_file == '\n')
       {
-        //printf("n: %i, id: %i, op: %i, units: %i\n", current_element, all_elements[current_element].product_id, all_elements[current_element].op, all_elements[current_element].units);
         current_element++;
         read_counter = 0;
       }
@@ -216,7 +216,7 @@ int main(int argc, const char *argv[])
   product_price[4] = 125;
 
   // measure time for fun
-  clock_t t = clock();
+  //clock_t t = clock();
 
   // use variables to read more easily
   int thread_num_p = atoi(argv[2]);
@@ -227,8 +227,8 @@ int main(int argc, const char *argv[])
   pthread_t consumers[thread_num_c];
   queue *store_queue;
   store_queue = queue_init(atoi(argv[4]));
-  //int res;
 
+  //initialize syncronization variables
   pthread_mutex_init(&access_mutex, NULL);
   pthread_cond_init(&non_full, NULL);
   pthread_cond_init(&non_empty, NULL);
@@ -246,20 +246,10 @@ int main(int argc, const char *argv[])
     }
     
     p_args->th_queue = store_queue;
-
     p_args->th_elements_array = all_elements;
 
     pthread_create(&(producers[i]), NULL, &t_producer, p_args);
-    //res = producer(i, all_elements, store_queue);
-    //if (res != 0){
-      //printf("Error putting in queue the element number n%i\n", i);
-    //}
   }
-
-  //-------------------
-  //for (int i=0; i<thread_num_p;i++){
-    //pthread_join(producers[i], NULL);
-  //}
 
   int profits = 0;
   int product_stock[5] = {0};
@@ -284,10 +274,6 @@ int main(int argc, const char *argv[])
     c_args->stock = product_stock;
 
     pthread_create(&(consumers[i]), NULL, &t_consumer, c_args);
-    //res = consumer(&profits, product_stock, store_queue);
-    //if (res != 0){
-      //printf("Error putting in queue the element number n%i\n", i);
-    //}
   }
 
   for (int i=0; i<thread_num_p;i++){
@@ -298,9 +284,9 @@ int main(int argc, const char *argv[])
     pthread_join(consumers[i], NULL);
   }
 
-  t = clock() -t;
-  double time_taken = ((double) t)/CLOCKS_PER_SEC;
-  printf("time taken %f\n", time_taken);
+  //t = clock() -t;
+  //double time_taken = ((double) t)/CLOCKS_PER_SEC;
+  //printf("time taken %f\n", time_taken);
 
   //// Output
   printf("Total: %d euros\n", profits);
@@ -317,4 +303,5 @@ int main(int argc, const char *argv[])
 /*
 ./store_manager file.txt 3 2 20
 ./store manager <file name><num producers><num consumers><buff size>
+zip p3_multithread_2024.zip Makefile  store_manager.c queue.c queue.h checker_os_p3.sh authors.txt file.txt 
 */
